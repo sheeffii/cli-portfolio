@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import Terminal from "./Terminal";
 
 export default function HeroSection() {
   const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 100);
@@ -10,11 +10,12 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section ref={ref} className="min-h-[80vh] flex flex-col justify-center px-6 md:px-12 lg:px-24 py-24 relative">
+    <section className="min-h-screen flex items-center px-6 md:px-12 lg:px-24 py-24 relative">
       <div className="absolute inset-0 scanline opacity-30" />
-      <div className="relative z-10 max-w-4xl">
+      <div className="relative z-10 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        {/* Left — Info */}
         {visible && (
-          <>
+          <div>
             <p
               className="text-terminal-comment text-sm mb-4 animate-fade-in-up"
               style={{ animationDelay: "0ms" }}
@@ -68,30 +69,27 @@ export default function HeroSection() {
               className="mt-10 flex gap-4 animate-fade-in-up"
               style={{ animationDelay: "500ms" }}
             >
-              <a
-                href="https://github.com/sheeffii"
-                target="_blank"
-                rel="noopener"
-                className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5"
-              >
+              <a href="https://github.com/sheeffii" target="_blank" rel="noopener" className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5">
                 <span className="text-terminal-dim">→</span> github
               </a>
-              <a
-                href="https://linkedin.com/in/shefqetsalihu"
-                target="_blank"
-                rel="noopener"
-                className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5"
-              >
+              <a href="https://linkedin.com/in/shefqetsalihu" target="_blank" rel="noopener" className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5">
                 <span className="text-terminal-dim">→</span> linkedin
               </a>
-              <a
-                href="mailto:shefqetsalihu123@gmail.com"
-                className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5"
-              >
+              <a href="mailto:shefqetsalihu123@gmail.com" className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5">
                 <span className="text-terminal-dim">→</span> email
               </a>
             </div>
-          </>
+          </div>
+        )}
+
+        {/* Right — Terminal */}
+        {visible && (
+          <div className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
+            <Terminal />
+            <p className="text-terminal-comment text-xs mt-3 text-center">
+              {"// Try: help, about, skills, neofetch"}
+            </p>
+          </div>
         )}
       </div>
 
