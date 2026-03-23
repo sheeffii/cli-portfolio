@@ -14,7 +14,7 @@ const PROJECTS = [
       "43 commits — iterative infra hardening across 10+ services",
     ],
     tech: ["Kubernetes", "ArgoCD", "Kafka", "Docker", "Terraform", "Prometheus", "Grafana", "GitHub Actions"],
-    github: "https://github.com/sheeffii",
+    github: "https://github.com/sheeffii/GameMetricsPro",
   },
   {
     tag: "FinOps",
