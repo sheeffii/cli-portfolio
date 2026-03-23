@@ -14,41 +14,7 @@ const COMMANDS: Record<string, { description: string }> = {
   whoami: { description: "Current user" },
   date: { description: "Show current date" },
   uptime: { description: "Show career uptime" },
-  cat: { description: "Read a file (try: cat README.md)" },
-  echo: { description: "Echo a message" },
-  sudo: { description: "Try it..." },
-  cowsay: { description: "Let the cow speak" },
-  fortune: { description: "Random DevOps wisdom" },
-  matrix: { description: "Enter the matrix" },
 };
-
-const FS: Record<string, string | Record<string, string>> = {
-  "README.md": "# Shefqet Salihu\n> DevOps Engineer | Cloud Enthusiast | Automation Junkie\n\nWelcome to my portfolio. Type 'help' to explore.",
-  "about.json": '{\n  "name": "Shefqet Salihu",\n  "role": "DevOps Engineer",\n  "location": "Pristina, Kosovo"\n}',
-  "skills.yml": "cloud:\n  - AWS\n  - Terraform\n  - Ansible\ncontainers:\n  - Docker\n  - Kubernetes\n  - Helm",
-  ".env.contact": "EMAIL=shefqetsalihu123@gmail.com\nLINKEDIN=linkedin.com/in/shefqetsalihu\nGITHUB=github.com/sheeffii",
-  ".bashrc": 'export PS1="shefqet@portfolio:~$ "\nalias deploy="git push origin main"\nalias yolo="git push --force"',
-  ".gitconfig": "[user]\n  name = Shefqet Salihu\n  email = shefqetsalihu123@gmail.com\n[core]\n  editor = vim",
-  "deploy.sh": "#!/bin/bash\necho 'Building...'\ndocker build -t portfolio .\nkubectl apply -f k8s/\necho 'Deployed! 🚀'",
-  projects: {
-    "gamemetrics/": "dir",
-    "vigilant/": "dir",
-    "vault-ha/": "dir",
-  },
-};
-
-const FORTUNES = [
-  "It works on my machine — so we'll ship your machine.",
-  "There are only two hard things: cache invalidation, naming things, and off-by-one errors.",
-  "A DevOps engineer walks into a bar... provisions 3 replicas and enables auto-scaling.",
-  "YAML: Yet Another Misaligned Line.",
-  "The cloud is just someone else's computer... that's on fire.",
-  "git push --force: because history is written by the victors.",
-  "Kubernetes: because your deployment wasn't complex enough.",
-  "Terraform plan: looks great. Terraform apply: surprise!",
-  "Docker: works on every machine except the one that matters.",
-  "DNS: it's always DNS.",
-];
 
 interface Line {
   content: React.ReactNode;
@@ -59,7 +25,7 @@ const TerminalPrompt = ({ value, onChange, onSubmit, onKeyDown, inputRef }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
-  onKeyDown: (e: React.KeyboardEvent) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   inputRef: React.RefObject<HTMLInputElement>;
 }) => (
   <div className="flex items-center gap-2 group">
@@ -73,8 +39,12 @@ const TerminalPrompt = ({ value, onChange, onSubmit, onKeyDown, inputRef }: {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={(e) => {
-        if (e.key === "Enter") onSubmit();
-        else onKeyDown(e);
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onSubmit();
+        } else {
+          onKeyDown(e);
+        }
       }}
       className="flex-1 bg-transparent outline-none text-foreground caret-primary font-mono text-sm"
       spellCheck={false}
@@ -234,49 +204,15 @@ const renderNeofetch = () => (
 );
 
 const renderLs = () => (
-  <div className="space-y-1">
-    <div className="flex flex-wrap gap-x-6 gap-y-1">
-      <span className="text-terminal-keyword">projects/</span>
-      <span className="text-foreground/80">README.md</span>
-      <span className="text-foreground/80">about.json</span>
-      <span className="text-foreground/80">skills.yml</span>
-      <span className="text-terminal-dim">.env.contact</span>
-      <span className="text-terminal-dim">.bashrc</span>
-      <span className="text-terminal-dim">.gitconfig</span>
-      <span className="text-terminal-success">deploy.sh</span>
-    </div>
-  </div>
-);
-
-const renderCowsay = (msg: string) => {
-  const text = msg || "Moo! I'm a DevOps cow 🐄";
-  const border = "─".repeat(text.length + 2);
-  return (
-    <pre className="text-terminal-highlight text-xs">
-{` ┌${border}┐
- │ ${text} │
- └${border}┘
-        \\   ^__^
-         \\  (oo)\\_______
-            (__)\\       )\\/\\
-                ||----w |
-                ||     ||`}
-    </pre>
-  );
-};
-
-const renderMatrix = () => (
-  <div className="space-y-1">
-    <p className="text-terminal-success font-bold">Wake up, Shefqet...</p>
-    <p className="text-terminal-success">The Matrix has you...</p>
-    <p className="text-terminal-success">Follow the white rabbit. 🐇</p>
-    <pre className="text-terminal-success/60 text-xs leading-tight mt-2">
-{`01001001 01110100 00100111 01110011
-01100001 01101100 01110111 01100001
-01111001 01110011 00100000 01000100
-01001110 01010011 00101110 00101110`}
-    </pre>
-    <p className="text-terminal-dim text-xs mt-1">Knock knock, Neo. (It was DNS all along.)</p>
+  <div className="flex flex-wrap gap-x-6 gap-y-1">
+    <span className="text-terminal-keyword">projects/</span>
+    <span className="text-foreground/80">README.md</span>
+    <span className="text-foreground/80">about.json</span>
+    <span className="text-foreground/80">skills.yml</span>
+    <span className="text-terminal-dim">.env.contact</span>
+    <span className="text-terminal-dim">.bashrc</span>
+    <span className="text-terminal-dim">.gitconfig</span>
+    <span className="text-terminal-success">deploy.sh</span>
   </div>
 );
 
@@ -302,9 +238,6 @@ export default function Terminal() {
 
   const processCommand = (cmd: string) => {
     const trimmed = cmd.trim().toLowerCase();
-    const parts = cmd.trim().split(/\s+/);
-    const base = parts[0]?.toLowerCase() || "";
-    const args = parts.slice(1).join(" ");
 
     const newLines: Line[] = [
       ...lines,
@@ -329,7 +262,7 @@ export default function Terminal() {
     }
 
     let output: React.ReactNode;
-    switch (base) {
+    switch (trimmed) {
       case "help": output = renderHelp(); break;
       case "about": output = renderAbout(); break;
       case "skills": output = renderSkills(); break;
@@ -357,22 +290,6 @@ export default function Terminal() {
           </div>
         );
         break;
-      case "cat": {
-        const file = args;
-        if (!file) {
-          output = <p className="text-terminal-error">cat: missing file operand. Try: cat README.md</p>;
-        } else if (FS[file] && typeof FS[file] === "string") {
-          output = (
-            <pre className="text-foreground/80 text-xs whitespace-pre-wrap">{FS[file] as string}</pre>
-          );
-        } else {
-          output = <p className="text-terminal-error">cat: {file}: No such file or directory</p>;
-        }
-        break;
-      }
-      case "echo":
-        output = <p className="text-foreground/80">{args || ""}</p>;
-        break;
       case "sudo":
         output = (
           <div className="space-y-1">
@@ -381,45 +298,8 @@ export default function Terminal() {
           </div>
         );
         break;
-      case "cowsay":
-        output = renderCowsay(args);
-        break;
-      case "fortune":
-        output = (
-          <div>
-            <p className="text-terminal-comment">{"// DevOps wisdom of the day:"}</p>
-            <p className="text-terminal-highlight mt-1 italic">"{FORTUNES[Math.floor(Math.random() * FORTUNES.length)]}"</p>
-          </div>
-        );
-        break;
-      case "matrix":
-        output = renderMatrix();
-        break;
-      case "rm":
-        output = (
-          <p className="text-terminal-error">
-            {args.includes("-rf") ? "🔥 rm -rf /? Bold. But this portfolio is immutable. Try Terraform destroy instead." : "rm: operation not permitted on this portfolio"}
-          </p>
-        );
-        break;
-      case "vim":
-      case "nano":
-      case "vi":
-        output = <p className="text-terminal-dim">Opening {base}... just kidding, this is a portfolio, not a server 😄</p>;
-        break;
       case "exit":
         output = <p className="text-terminal-dim">There is no escape. You're stuck admiring this portfolio forever.</p>;
-        break;
-      case "ping":
-        output = (
-          <div className="space-y-0.5 text-xs">
-            <p className="text-foreground/80">PING shefqet.dev (127.0.0.1): 56 data bytes</p>
-            <p className="text-foreground/80">64 bytes from shefqet.dev: icmp_seq=0 ttl=64 time=<span className="text-terminal-success">0.042ms</span></p>
-            <p className="text-foreground/80">64 bytes from shefqet.dev: icmp_seq=1 ttl=64 time=<span className="text-terminal-success">0.038ms</span></p>
-            <p className="text-terminal-dim mt-1">--- shefqet.dev ping statistics ---</p>
-            <p className="text-terminal-dim">2 packets transmitted, 2 received, 0% packet loss</p>
-          </div>
-        );
         break;
       default:
         output = (
@@ -436,39 +316,33 @@ export default function Terminal() {
     setInput("");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Tab") {
       e.preventDefault();
       const current = input.trim().toLowerCase();
       if (!current) return;
 
-      // Check if it's a cat command — autocomplete file names
-      if (current.startsWith("cat ")) {
-        const partial = current.slice(4);
-        const files = Object.keys(FS).filter(f => typeof FS[f] === "string" && f.startsWith(partial));
-        if (files.length === 1) {
-          setInput("cat " + files[0]);
-        } else if (files.length > 1) {
-          // Show possible completions
-          const newLines: Line[] = [
-            ...lines,
-            { content: <p className="text-terminal-dim">{files.join("  ")}</p>, type: "output" },
-          ];
-          setLines(newLines);
-        }
-        return;
-      }
+      const allCommands = Object.keys(COMMANDS);
+      const matches = allCommands.filter(c => c.startsWith(current));
 
-      // Autocomplete command names
-      const matches = Object.keys(COMMANDS).filter(c => c.startsWith(current));
       if (matches.length === 1) {
         setInput(matches[0]);
       } else if (matches.length > 1) {
-        const newLines: Line[] = [
-          ...lines,
-          { content: <p className="text-terminal-dim">{matches.join("  ")}</p>, type: "output" },
-        ];
-        setLines(newLines);
+        // Find common prefix
+        let prefix = matches[0];
+        for (const m of matches) {
+          while (!m.startsWith(prefix)) {
+            prefix = prefix.slice(0, -1);
+          }
+        }
+        if (prefix.length > current.length) {
+          setInput(prefix);
+        } else {
+          setLines(prev => [
+            ...prev,
+            { content: <p className="text-terminal-dim">{matches.join("  ")}</p>, type: "output" },
+          ]);
+        }
       }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
