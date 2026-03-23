@@ -44,7 +44,7 @@ const PROJECTS = [
       "Real-time Discord alerts for CPU, memory, disk & service health",
     ],
     tech: ["Terraform", "Packer", "GitHub Actions", "AWS EC2", "ECR", "Docker", "Prometheus", "Grafana", "Alertmanager"],
-    github: "https://github.com/sheeffii",
+    github: "https://github.com/sheeffii/full_devops_project",
   },
   {
     tag: "K8s",
