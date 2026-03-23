@@ -1,4 +1,4 @@
-# Shefqet | DevOps Engineer Portfolio
+# Shefqet Salihu | DevOps Engineer Portfolio
 
 Welcome to the repository for my personal portfolio, accessible at [shefqet.cloud](https://shefqet.cloud).
 
