@@ -29,7 +29,7 @@ const PROJECTS = [
       "Local-first lab — safely iterates before real AWS deployment",
     ],
     tech: ["Python", "FastAPI", "Terraform", "LocalStack", "Docker", "PostgreSQL", "Redis", "React"],
-    github: "https://github.com/sheeffii",
+    github: "https://github.com/sheeffii/Vigilant",
   },
   {
     tag: "CI/CD",
