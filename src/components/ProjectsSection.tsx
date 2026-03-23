@@ -14,7 +14,7 @@ const PROJECTS = [
       "43 commits — iterative infra hardening across 10+ services",
     ],
     tech: ["Kubernetes", "ArgoCD", "Kafka", "Docker", "Terraform", "Prometheus", "Grafana", "GitHub Actions"],
-    github: "https://github.com/sheeffii",
+    github: "https://github.com/sheeffii/GameMetricsPro",
   },
   {
     tag: "FinOps",
@@ -29,7 +29,7 @@ const PROJECTS = [
       "Local-first lab — safely iterates before real AWS deployment",
     ],
     tech: ["Python", "FastAPI", "Terraform", "LocalStack", "Docker", "PostgreSQL", "Redis", "React"],
-    github: "https://github.com/sheeffii",
+    github: "https://github.com/sheeffii/Vigilant",
   },
   {
     tag: "CI/CD",
@@ -44,7 +44,7 @@ const PROJECTS = [
       "Real-time Discord alerts for CPU, memory, disk & service health",
     ],
     tech: ["Terraform", "Packer", "GitHub Actions", "AWS EC2", "ECR", "Docker", "Prometheus", "Grafana", "Alertmanager"],
-    github: "https://github.com/sheeffii",
+    github: "https://github.com/sheeffii/full_devops_project",
   },
   {
     tag: "K8s",
