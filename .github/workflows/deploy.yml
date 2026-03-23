@@ -2,12 +2,16 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main"] 
+    branches: ["main"]
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+# Add this to opt-in to the new Node 24 runner behavior
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-deploy:
@@ -19,7 +23,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       - name: Install dependencies
@@ -29,7 +33,7 @@ jobs:
         run: npm run build
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
