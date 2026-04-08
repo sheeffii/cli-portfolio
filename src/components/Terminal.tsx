@@ -1,19 +1,17 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 
 const COMMANDS: Record<string, { description: string }> = {
   help: { description: "List available commands" },
-  about: { description: "Who is Shefqet?" },
-  skills: { description: "Technical skills" },
-  experience: { description: "Work experience" },
-  education: { description: "Education & certifications" },
-  contact: { description: "Contact information" },
-  clear: { description: "Clear terminal" },
-  neofetch: { description: "System info" },
   ls: { description: "List directory contents" },
+  cat: { description: "Print file contents (e.g. cat about.json)" },
+  cd: { description: "Change directory (e.g. cd projects/)" },
+  touch: { description: "Create a file (demo)" },
   pwd: { description: "Print working directory" },
   whoami: { description: "Current user" },
   date: { description: "Show current date" },
   uptime: { description: "Show career uptime" },
+  clear: { description: "Clear terminal" },
+  neofetch: { description: "System info" },
 };
 
 interface Line {
@@ -62,6 +60,7 @@ const renderHelp = () => (
         <span className="text-terminal-dim">{description}</span>
       </div>
     ))}
+    <p className="text-terminal-dim text-xs mt-2">Tip: use <span className="text-terminal-highlight">Tab</span> for autocomplete.</p>
   </div>
 );
 
@@ -210,21 +209,107 @@ const renderLs = () => (
     <span className="text-foreground/80">about.json</span>
     <span className="text-foreground/80">skills.yml</span>
     <span className="text-terminal-dim">.env.contact</span>
+    <span className="text-terminal-dim">education.md</span>
     <span className="text-terminal-dim">.bashrc</span>
     <span className="text-terminal-dim">.gitconfig</span>
     <span className="text-terminal-success">deploy.sh</span>
   </div>
 );
 
+type FsNode =
+  | { type: "dir"; children: Record<string, FsNode> }
+  | { type: "file"; kind: "about" | "skills" | "experience" | "education" | "contact" | "text"; content?: string };
+
+const FS: FsNode = {
+  type: "dir",
+  children: {
+    "README.md": { type: "file", kind: "text", content: "Welcome. Try: cat about.json" },
+    "about.json": { type: "file", kind: "about" },
+    "skills.yml": { type: "file", kind: "skills" },
+    "experience.log": { type: "file", kind: "experience" },
+    "education.md": { type: "file", kind: "education" },
+    ".env.contact": { type: "file", kind: "contact" },
+    projects: {
+      type: "dir",
+      children: {
+        "deploy.sh": { type: "file", kind: "text", content: "#!/usr/bin/env bash\n# demo file\n" },
+        "pipelines.md": { type: "file", kind: "text", content: "CI/CD notes: build → test → scan → deploy\n" },
+      },
+    },
+  },
+};
+
+function splitPath(p: string) {
+  const cleaned = p.trim().replaceAll("\\", "/");
+  return cleaned.split("/").filter((x) => x.length > 0);
+}
+
+function normalizeCwd(parts: string[]) {
+  const out: string[] = [];
+  for (const p of parts) {
+    if (p === "." || p === "") continue;
+    if (p === "..") out.pop();
+    else out.push(p);
+  }
+  return out;
+}
+
+function resolvePath(cwd: string[], inputPath: string) {
+  const raw = inputPath.trim();
+  if (!raw) return cwd;
+  const absolute = raw.startsWith("/");
+  const parts = splitPath(raw);
+  return normalizeCwd(absolute ? parts : [...cwd, ...parts]);
+}
+
+function getNode(pathParts: string[]): FsNode | null {
+  let node: FsNode = FS;
+  for (const p of pathParts) {
+    if (node.type !== "dir") return null;
+    node = node.children[p];
+    if (!node) return null;
+  }
+  return node;
+}
+
+function listDir(pathParts: string[]) {
+  const node = getNode(pathParts);
+  if (!node) return { ok: false as const, error: "No such file or directory" };
+  if (node.type !== "dir") return { ok: false as const, error: "Not a directory" };
+  const entries = Object.keys(node.children).sort((a, b) => a.localeCompare(b));
+  return { ok: true as const, entries };
+}
+
+function completePath(cwd: string[], partial: string) {
+  const raw = partial.trim();
+  const isAbs = raw.startsWith("/");
+  const parts = raw === "" ? [] : raw.replaceAll("\\", "/").split("/");
+  const baseParts = parts.slice(0, -1).filter(Boolean);
+  const prefix = (parts.at(-1) ?? "").trim();
+  const dirParts = resolvePath(isAbs ? [] : cwd, (isAbs ? "/" : "") + baseParts.join("/"));
+  const dir = getNode(dirParts);
+  if (!dir || dir.type !== "dir") return [];
+  return Object.keys(dir.children)
+    .filter((k) => k.toLowerCase().startsWith(prefix.toLowerCase()))
+    .map((k) => {
+      const child = dir.children[k];
+      const suffix = child.type === "dir" ? "/" : "";
+      const full = [...baseParts, k + suffix].join("/");
+      return (isAbs ? "/" : "") + full;
+    });
+}
+
 export default function Terminal() {
   const [lines, setLines] = useState<Line[]>([
-    { content: <p className="text-terminal-comment">{"// Welcome to Shefqet's portfolio. Type 'help' for commands."}</p>, type: "system" },
+    { content: <p className="text-terminal-comment">{"// Welcome. Type 'help' for commands. Try: ls, cat about.json"}</p>, type: "system" },
   ]);
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [cwd, setCwd] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [userFiles, setUserFiles] = useState<Record<string, string>>({});
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -237,7 +322,11 @@ export default function Terminal() {
   }, [lines, scrollToBottom]);
 
   const processCommand = (cmd: string) => {
-    const trimmed = cmd.trim().toLowerCase();
+    const trimmed = cmd.trim();
+    const lower = trimmed.toLowerCase();
+    const [verbRaw, ...restRaw] = trimmed.split(/\s+/);
+    const verb = (verbRaw ?? "").toLowerCase();
+    const rest = restRaw.join(" ");
 
     const newLines: Line[] = [
       ...lines,
@@ -255,58 +344,125 @@ export default function Terminal() {
       },
     ];
 
-    if (trimmed === "clear") {
+    if (verb === "clear") {
       setLines([]);
       setInput("");
       return;
     }
 
     let output: React.ReactNode;
-    switch (trimmed) {
-      case "help": output = renderHelp(); break;
-      case "about": output = renderAbout(); break;
-      case "skills": output = renderSkills(); break;
-      case "experience": output = renderExperience(); break;
-      case "education": output = renderEducation(); break;
-      case "contact": output = renderContact(); break;
-      case "neofetch": output = renderNeofetch(); break;
-      case "ls": output = renderLs(); break;
-      case "pwd":
-        output = <p className="text-foreground/80">/home/shefqet/portfolio</p>;
-        break;
-      case "whoami":
-        output = <p className="text-terminal-highlight">shefqet — DevOps Engineer, breaker of YAML, tamer of pipelines</p>;
-        break;
-      case "date":
-        output = <p className="text-foreground/80">{new Date().toString()}</p>;
-        break;
-      case "uptime":
+    if (verb === "help") output = renderHelp();
+    else if (verb === "neofetch") output = renderNeofetch();
+    else if (verb === "pwd") output = <p className="text-foreground/80">/home/shefqet/portfolio{cwd.length ? `/${cwd.join("/")}` : ""}</p>;
+    else if (verb === "whoami") output = <p className="text-terminal-highlight">shefqet</p>;
+    else if (verb === "date") output = <p className="text-foreground/80">{new Date().toString()}</p>;
+    else if (verb === "uptime") {
+      output = (
+        <div className="text-sm">
+          <p className="text-foreground/80">
+            up 3 years, 6 months, load average: <span className="text-terminal-success">0.42</span>, <span className="text-terminal-success">0.38</span>, <span className="text-terminal-success">0.35</span>
+          </p>
+          <p className="text-terminal-dim mt-1">STATUS: caffeinated and deploying</p>
+        </div>
+      );
+    } else if (verb === "ls") {
+      const target = rest.trim();
+      const targetParts = resolvePath(cwd, target);
+      const listed = listDir(target ? targetParts : cwd);
+      if (!listed.ok) {
+        output = <p className="text-terminal-error">ls: {target || "."}: {listed.error}</p>;
+      } else {
         output = (
-          <div className="text-sm">
-            <p className="text-foreground/80">
-              up 3 years, 6 months, load average: <span className="text-terminal-success">0.42</span>, <span className="text-terminal-success">0.38</span>, <span className="text-terminal-success">0.35</span>
-            </p>
-            <p className="text-terminal-dim mt-1">STATUS: caffeinated and deploying</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1">
+            {listed.entries.map((e) => {
+              const node = getNode([...targetParts, e]) ?? getNode([...cwd, e]);
+              const isDir = node?.type === "dir";
+              return (
+                <span key={e} className={isDir ? "text-terminal-keyword" : "text-foreground/80"}>
+                  {e}{isDir ? "/" : ""}
+                </span>
+              );
+            })}
           </div>
         );
-        break;
-      case "sudo":
-        output = (
-          <div className="space-y-1">
-            <p className="text-terminal-error">Permission denied: nice try though 😏</p>
-            <p className="text-terminal-dim text-xs">This incident will be reported... to nobody.</p>
-          </div>
-        );
-        break;
-      case "exit":
-        output = <p className="text-terminal-dim">There is no escape. You're stuck admiring this portfolio forever.</p>;
-        break;
-      default:
+      }
+    } else if (verb === "cd") {
+      const target = rest.trim();
+      const next = resolvePath(cwd, target || "/");
+      const node = getNode(next);
+      if (!node) output = <p className="text-terminal-error">cd: {target}: No such file or directory</p>;
+      else if (node.type !== "dir") output = <p className="text-terminal-error">cd: {target}: Not a directory</p>;
+      else {
+        setCwd(next);
+        output = <p className="text-terminal-dim"> </p>;
+      }
+    } else if (verb === "touch") {
+      const name = rest.trim();
+      if (!name) output = <p className="text-terminal-error">touch: missing file operand</p>;
+      else {
+        const path = resolvePath(cwd, name);
+        const key = "/" + path.join("/");
+        setUserFiles((prev) => ({ ...prev, [key]: "" }));
+        output = <p className="text-terminal-dim"> </p>;
+      }
+    } else if (verb === "cat") {
+      const argRaw = rest.trim();
+      if (!argRaw) {
         output = (
           <p className="text-terminal-error">
-            bash: {trimmed}: command not found. Type <span className="text-terminal-highlight">'help'</span> for available commands.
+            cat: missing operand. Try: <span className="text-terminal-highlight">cat about.json</span>
           </p>
         );
+      } else {
+        const path = resolvePath(cwd, argRaw);
+        const key = "/" + path.join("/");
+        if (key in userFiles) {
+          output = <pre className="text-xs text-foreground/80 whitespace-pre-wrap">{userFiles[key]}</pre>;
+        } else {
+          const node = getNode(path);
+          if (!node) output = <p className="text-terminal-error">cat: {argRaw}: No such file</p>;
+          else if (node.type !== "file") output = <p className="text-terminal-error">cat: {argRaw}: Is a directory</p>;
+          else {
+            switch (node.kind) {
+              case "about":
+                output = renderAbout();
+                break;
+              case "skills":
+                output = renderSkills();
+                break;
+              case "experience":
+                output = renderExperience();
+                break;
+              case "education":
+                output = renderEducation();
+                break;
+              case "contact":
+                output = renderContact();
+                break;
+              case "text":
+                output = <pre className="text-xs text-foreground/80 whitespace-pre-wrap">{node.content ?? ""}</pre>;
+                break;
+              default:
+                output = <p className="text-terminal-error">cat: unsupported file</p>;
+            }
+          }
+        }
+      }
+    } else if (lower === "sudo") {
+      output = (
+        <div className="space-y-1">
+          <p className="text-terminal-error">Permission denied</p>
+          <p className="text-terminal-dim text-xs">This incident will be reported... to nobody.</p>
+        </div>
+      );
+    } else if (lower === "exit") {
+      output = <p className="text-terminal-dim">There is no escape. You're stuck admiring this portfolio forever.</p>;
+    } else {
+      output = (
+        <p className="text-terminal-error">
+          bash: {lower}: command not found. Type <span className="text-terminal-highlight">'help'</span> for available commands.
+        </p>
+      );
     }
 
     newLines.push({ content: output, type: "output" });
@@ -319,16 +475,35 @@ export default function Terminal() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Tab") {
       e.preventDefault();
-      const current = input.trim().toLowerCase();
-      if (!current) return;
+      const current = input.trim();
+      const lower = current.toLowerCase();
+      if (!lower) return;
 
+      const parts = lower.split(/\s+/);
+      const [verb, ...rest] = parts;
+      const arg = rest.join(" ");
+
+      const showMatches = (matches: string[]) => {
+        setLines((prev) => [
+          ...prev,
+          { content: <p className="text-terminal-dim">{matches.join("  ")}</p>, type: "output" },
+        ]);
+      };
+
+      if (verb === "cat" || verb === "cd" || verb === "ls") {
+        const matches = completePath(cwd, arg);
+        if (matches.length === 1) setInput(`${verb} ${matches[0]}`);
+        else if (matches.length > 1) showMatches(matches);
+        return;
+      }
+
+      // Default command autocomplete
       const allCommands = Object.keys(COMMANDS);
-      const matches = allCommands.filter(c => c.startsWith(current));
+      const matches = allCommands.filter((c) => c.startsWith(lower));
 
       if (matches.length === 1) {
         setInput(matches[0]);
       } else if (matches.length > 1) {
-        // Find common prefix
         let prefix = matches[0];
         for (const m of matches) {
           while (!m.startsWith(prefix)) {
@@ -338,10 +513,7 @@ export default function Terminal() {
         if (prefix.length > current.length) {
           setInput(prefix);
         } else {
-          setLines(prev => [
-            ...prev,
-            { content: <p className="text-terminal-dim">{matches.join("  ")}</p>, type: "output" },
-          ]);
+          showMatches(matches);
         }
       }
     } else if (e.key === "ArrowUp") {
@@ -377,7 +549,9 @@ export default function Terminal() {
           <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
           <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
         </div>
-        <span className="text-xs text-muted-foreground ml-2">shefqet@portfolio: ~</span>
+        <span className="text-xs text-muted-foreground ml-2">
+          shefqet@portfolio: ~{cwd.length ? `/${cwd.join("/")}` : ""}
+        </span>
       </div>
       {/* Terminal body */}
       <div ref={scrollRef} className="p-4 h-[420px] overflow-y-auto space-y-3 text-sm relative">

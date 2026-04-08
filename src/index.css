@@ -6,6 +6,59 @@
 
 @layer base {
   :root {
+    /* Light theme tokens (default) */
+    --background: 210 25% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 140 70% 35%;
+    --primary-foreground: 210 25% 98%;
+
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 16% 40%;
+
+    --accent: 35 90% 45%;
+    --accent-foreground: 210 25% 98%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 85%;
+    --input: 214 20% 85%;
+    --ring: 140 70% 35%;
+
+    --radius: 0.25rem;
+
+    --terminal-cursor: 140 70% 35%;
+    --terminal-prompt: 35 90% 40%;
+    --terminal-comment: 215 16% 40%;
+    --terminal-string: 200 70% 38%;
+    --terminal-keyword: 280 55% 45%;
+    --terminal-error: 0 72% 45%;
+    --terminal-success: 140 70% 35%;
+    --terminal-dim: 215 16% 40%;
+    --terminal-highlight: 50 90% 40%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 140 70% 35%;
+    --sidebar-primary-foreground: 210 25% 98%;
+    --sidebar-accent: 210 20% 94%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 20% 85%;
+    --sidebar-ring: 140 70% 35%;
+  }
+
+  .dark {
+    /* Dark theme tokens */
     --background: 220 16% 4%;
     --foreground: 140 60% 75%;
 
@@ -34,8 +87,6 @@
     --input: 220 14% 12%;
     --ring: 140 70% 55%;
 
-    --radius: 0.25rem;
-
     --terminal-cursor: 140 70% 55%;
     --terminal-prompt: 35 90% 55%;
     --terminal-comment: 220 8% 38%;
@@ -54,6 +105,59 @@
     --sidebar-accent-foreground: 140 60% 75%;
     --sidebar-border: 140 20% 18%;
     --sidebar-ring: 140 70% 55%;
+  }
+}
+
+@layer base {
+  :root[data-skin="amber"] {
+    --foreground: 44 90% 78%;
+    --primary: 38 92% 55%;
+    --ring: 38 92% 55%;
+    --border: 44 25% 18%;
+
+    --terminal-cursor: 38 92% 55%;
+    --terminal-prompt: 44 90% 60%;
+    --terminal-comment: 220 8% 38%;
+    --terminal-string: 44 90% 65%;
+    --terminal-keyword: 280 60% 70%;
+    --terminal-error: 0 72% 60%;
+    --terminal-success: 38 92% 55%;
+    --terminal-dim: 44 20% 35%;
+    --terminal-highlight: 50 95% 62%;
+  }
+
+  :root[data-skin="cyan"] {
+    --foreground: 185 70% 78%;
+    --primary: 190 85% 55%;
+    --ring: 190 85% 55%;
+    --border: 190 25% 18%;
+
+    --terminal-cursor: 190 85% 55%;
+    --terminal-prompt: 35 90% 55%;
+    --terminal-comment: 220 8% 38%;
+    --terminal-string: 200 80% 65%;
+    --terminal-keyword: 280 60% 70%;
+    --terminal-error: 0 72% 60%;
+    --terminal-success: 190 85% 55%;
+    --terminal-dim: 190 20% 35%;
+    --terminal-highlight: 50 90% 60%;
+  }
+
+  :root[data-skin="minimal"] {
+    --foreground: 210 15% 92%;
+    --primary: 210 12% 78%;
+    --ring: 210 12% 78%;
+    --border: 220 10% 20%;
+
+    --terminal-cursor: 210 12% 78%;
+    --terminal-prompt: 210 10% 72%;
+    --terminal-comment: 220 8% 42%;
+    --terminal-string: 210 10% 72%;
+    --terminal-keyword: 210 10% 72%;
+    --terminal-error: 0 72% 60%;
+    --terminal-success: 210 12% 78%;
+    --terminal-dim: 220 8% 42%;
+    --terminal-highlight: 210 12% 78%;
   }
 }
 
@@ -174,4 +278,24 @@
 
 .animate-slide-in-left {
   animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
